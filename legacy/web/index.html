@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频对比工具</title>
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">▶◀</span>
+    <span class="brand-text">视频对比</span>
+    <span class="env-badge" id="env-badge" title="运行环境">检测中…</span>
+  </div>
+
+  <div class="top-actions">
+    <button class="btn" id="btn-sync-play" title="两侧同时开始播放">▶▶ 同步播放</button>
+    <button class="btn" id="btn-sync-pause" title="两侧同时暂停">⏸ 同步暂停</button>
+    <button class="btn ghost" id="btn-align-left" title="把右侧播放位置对齐到左侧">⇥ 对齐到左</button>
+    <button class="btn ghost" id="btn-rewind" title="两侧都回到开头">⏮ 归零</button>
+
+    <label class="switch" title="开启后，操作任一侧的播放/暂停/进度会同步到另一侧">
+      <input type="checkbox" id="chk-link" checked>
+      <span>联动</span>
+    </label>
+    <label class="switch" title="两侧音量一起调整">
+      <input type="checkbox" id="chk-vol" checked>
+      <span>音量联动</span>
+    </label>
+
+    <button class="btn ghost" id="btn-swap" title="交换左右视频">⇄ 交换</button>
+    <button class="btn ghost" id="btn-quit" title="关闭服务并退出">退出</button>
+  </div>
+</header>
+
+<main class="grid" id="grid">
+  <div class="pane-mount" id="mount-left"></div>
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="diff-badge" id="diff-badge" hidden>差异 0</div>
+    <div class="divider-line"></div>
+  </div>
+  <div class="pane-mount" id="mount-right"></div>
+</main>
+
+<!-- ======== 文件选择器 ======== -->
+<div class="modal" id="picker" hidden>
+  <div class="modal-box wide">
+    <header class="modal-head">
+      <h3 data-role="title">选择视频</h3>
+      <button class="icon-btn" data-role="close" title="关闭">✕</button>
+    </header>
+    <div class="picker-bar">
+      <button class="btn ghost" data-role="up">⬆ 上一级</button>
+      <button class="btn ghost" data-role="net" title="访问 \\服务器\共享 形式的网络路径">🌐 网络位置…</button>
+      <div class="drives" data-role="drives"></div>
+      <input class="path-input" data-role="path" spellcheck="false" placeholder="输入路径后回车">
+      <button class="btn ghost" data-role="go">前往</button>
+      <button class="btn ghost" data-role="sys" title="使用 Windows 系统对话框">系统对话框…</button>
+    </div>
+    <div class="picker-list" data-role="list"></div>
+    <footer class="modal-foot">
+      <span class="hint" data-role="hint">双击文件夹进入，双击视频直接打开；地址栏支持 \\NAS\共享\目录 或直接粘贴完整文件路径</span>
+      <span class="spacer"></span>
+      <button class="btn ghost" data-role="cancel">取消</button>
+      <button class="btn primary" data-role="ok" disabled>确定</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ======== 重命名 ======== -->
+<div class="modal" id="rename" hidden>
+  <div class="modal-box">
+    <header class="modal-head">
+      <h3>重命名</h3>
+      <button class="icon-btn" data-role="close" title="关闭">✕</button>
+    </header>
+    <div class="modal-body">
+      <div class="field-label">当前文件</div>
+      <div class="field-static" data-role="current"></div>
+      <div class="field-label">新文件名</div>
+      <input class="text-input" data-role="input" spellcheck="false">
+      <div class="field-hint" data-role="hint">回车确认，Esc 取消</div>
+    </div>
+    <footer class="modal-foot">
+      <span class="spacer"></span>
+      <button class="btn ghost" data-role="cancel">取消</button>
+      <button class="btn primary" data-role="ok">确定</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ======== 确认框 ======== -->
+<div class="modal" id="confirm" hidden>
+  <div class="modal-box">
+    <header class="modal-head">
+      <h3 data-role="title">确认</h3>
+      <button class="icon-btn" data-role="close" title="关闭">✕</button>
+    </header>
+    <div class="modal-body">
+      <div class="confirm-text" data-role="text"></div>
+      <div class="confirm-file" data-role="file"></div>
+    </div>
+    <footer class="modal-foot">
+      <span class="spacer"></span>
+      <button class="btn ghost" data-role="cancel">取消</button>
+      <button class="btn danger" data-role="ok">确定</button>
+    </footer>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>

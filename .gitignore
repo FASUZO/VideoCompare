@@ -1,0 +1,26 @@
+# build output
+dist/
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# generated test media (see _test/make_media.ps1) and diagnostic dumps
+_test/media/
+*.txt.diag
+seeklog.txt
+selftest.txt
+uicheck.txt
+seektest.txt
+clicktest.txt
+barrect.txt
+crash-*.log
+
+# crash / trace files
+*.log
+*.tmp
+
+# OS
+Thumbs.db
+desktop.ini

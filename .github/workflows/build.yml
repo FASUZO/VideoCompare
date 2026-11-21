@@ -1,0 +1,62 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: choco install ffmpeg -y --no-progress
+
+      - name: Build
+        shell: pwsh
+        run: ./build.ps1 -Zip
+
+      - name: Generate test media
+        shell: pwsh
+        run: ./_test/make_media.ps1
+
+      - name: Self test (decode + metadata)
+        shell: pwsh
+        run: |
+          $exe = "dist\VideoCompare.exe"
+          & $exe --selftest "_test\media\01_h264_25fps.mp4" "_test\media\02_hevc_aac.mkv"
+          Get-Content "dist\selftest.txt"
+          if (-not (Select-String -Path "dist\selftest.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "selftest failed" }
+
+      - name: UI check (styles, two-column info, mute)
+        shell: pwsh
+        run: |
+          $exe = "dist\VideoCompare.exe"
+          & $exe --uicheck "_test\media\01_h264_25fps.mp4" "_test\media\03_prores422.mov"
+          Get-Content "dist\uicheck.txt"
+          if (-not (Select-String -Path "dist\uicheck.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "uicheck failed" }
+
+      - name: Seek stability test
+        shell: pwsh
+        run: |
+          $exe = "dist\VideoCompare.exe"
+          & $exe --seektest "_test\media\07_long_90s.mp4" "0.2,0.85,0.05,0.6,0.35,0.9,0.45"
+          Get-Content "dist\seektest.txt"
+          if (-not (Select-String -Path "dist\seektest.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "seektest failed" }
+
+      - name: Click stability test
+        shell: pwsh
+        run: |
+          $exe = "dist\VideoCompare.exe"
+          & $exe --clicktest "_test\media\07_long_90s.mp4" "0.9,0.1,0.9,0.1,0.5,0.95,0.05" 350
+          Get-Content "dist\clicktest.txt"
+          if (-not (Select-String -Path "dist\clicktest.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "clicktest failed" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: video-compare-win-x64
+          path: dist/video-compare-*-win-x64.zip
