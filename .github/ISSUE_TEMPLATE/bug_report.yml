@@ -1,0 +1,51 @@
+name: 问题反馈
+description: 播放、信息显示、文件操作或界面异常
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量填全，尤其是**自检输出**和**文件信息**，能大幅缩短定位时间。
+  - type: input
+    id: version
+    attributes:
+      label: 程序版本
+      description: 关于对话框里的版本号，或 exe 属性里的产品版本
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: 系统
+      placeholder: Windows 11 23H2 x64
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 做了什么、期望什么、实际什么。能稳定复现的步骤优先。
+    validations:
+      required: true
+  - type: textarea
+    id: selftest
+    attributes:
+      label: 自检输出
+      description: |
+        在命令行跑一下并把 `dist\selftest.txt` 的内容贴上来（把两个视频换成你自己的文件）：
+        ```
+        VideoCompare.exe --selftest "视频A" "视频B"
+        ```
+      render: text
+  - type: textarea
+    id: media
+    attributes:
+      label: 视频信息
+      description: 出问题的那一侧的「容器格式 / 编码 / 分辨率 / 帧率 / 声道」几行，来源是本机的还是网络共享
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: 其它
+      description: 崩溃日志（数据目录 `logs\crash-*.log`）、截图、是否装了 HEVC 扩展等

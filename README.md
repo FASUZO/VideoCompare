@@ -1,5 +1,9 @@
 # 视频对比工具 · VideoCompare
 
+[![build](https://github.com/FASUZO/VideoCompare/actions/workflows/build.yml/badge.svg)](https://github.com/FASUZO/VideoCompare/actions/workflows/build.yml)
+[![release](https://img.shields.io/github/v/release/FASUZO/VideoCompare?display_name=tag&sort=semver)](https://github.com/FASUZO/VideoCompare/releases/latest)
+[![license](https://img.shields.io/github/license/FASUZO/VideoCompare)](LICENSE)
+
 左右两栏同时播放两个不同的视频，逐项对照编码方式、分辨率、帧率、位深、声道、码率等元数据，
 并用**按钮**完成重命名 / 移动 / 删除等文件操作。原生 Windows 桌面程序（WPF / .NET Framework 4.x），
 单文件 exe，绿色免安装。

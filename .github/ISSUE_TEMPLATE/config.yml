@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用问题 / 讨论
+    url: https://github.com/FASUZO/VideoCompare/discussions
+    about: 遇到不会用的地方、想问怎么配置 ffmpeg，请到这里
+  - name: 安全漏洞
+    url: https://github.com/FASUZO/VideoCompare/security/advisories/new
+    about: 请勿公开提交安全问题，走这里私下报告

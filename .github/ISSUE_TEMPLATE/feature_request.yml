@@ -1,0 +1,20 @@
+name: 功能建议
+description: 想要的新能力或改进
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: 你的场景
+      description: 在什么情况下觉得不方便？先说场景，再说想要的解法。
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 期望的做法
+  - type: textarea
+    id: alt
+    attributes:
+      label: 替代方案
+      description: 现在你是怎么绕过去的？（例如用别的工具、命令行 ffprobe）
