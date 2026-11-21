@@ -24,37 +24,52 @@ jobs:
         shell: pwsh
         run: ./_test/make_media.ps1
 
-      - name: Self test (decode + metadata)
+      - name: Run self checks
         shell: pwsh
+        timeout-minutes: 20
         run: |
-          $exe = "dist\VideoCompare.exe"
-          & $exe --selftest "_test\media\01_h264_25fps.mp4" "_test\media\02_hevc_aac.mkv"
-          Get-Content "dist\selftest.txt"
-          if (-not (Select-String -Path "dist\selftest.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "selftest failed" }
+          # VideoCompare.exe 是 winexe（GUI 子系统）：直接 & 调用不会等待，必须 Start-Process 等它跑完
+          $checks = @(
+            @{ Name = 'selftest';  Out = 'dist\selftest.txt';  Timeout = 120; Args = @('--selftest',  '_test\media\01_h264_25fps.mp4', '_test\media\02_hevc_aac.mkv') },
+            @{ Name = 'uicheck';   Out = 'dist\uicheck.txt';   Timeout = 120; Args = @('--uicheck',   '_test\media\01_h264_25fps.mp4', '_test\media\03_prores422.mov') },
+            @{ Name = 'seektest';  Out = 'dist\seektest.txt';  Timeout = 180; Args = @('--seektest',  '_test\media\07_long_90s.mp4', '0.2,0.85,0.05,0.6,0.35,0.9,0.45') },
+            @{ Name = 'clicktest'; Out = 'dist\clicktest.txt'; Timeout = 180; Args = @('--clicktest', '_test\media\07_long_90s.mp4', '0.9,0.1,0.9,0.1,0.5,0.95,0.05', '350') }
+          )
 
-      - name: UI check (styles, two-column info, mute)
-        shell: pwsh
-        run: |
-          $exe = "dist\VideoCompare.exe"
-          & $exe --uicheck "_test\media\01_h264_25fps.mp4" "_test\media\03_prores422.mov"
-          Get-Content "dist\uicheck.txt"
-          if (-not (Select-String -Path "dist\uicheck.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "uicheck failed" }
+          $failed = @()
+          foreach ($c in $checks) {
+            if (Test-Path $c.Out) { Remove-Item $c.Out -Force }
+            Write-Host "==> $($c.Name)"
+            $p = Start-Process -FilePath 'dist\VideoCompare.exe' -ArgumentList $c.Args -PassThru
+            $deadline = (Get-Date).AddSeconds($c.Timeout)
+            while (-not (Test-Path $c.Out) -and (Get-Date) -lt $deadline) {
+              if ($p.HasExited -and -not (Test-Path $c.Out)) { Start-Sleep -Seconds 2; break }
+              Start-Sleep -Milliseconds 500
+            }
+            if (-not $p.HasExited) { try { $p.WaitForExit(30000) | Out-Null } catch { } }
+            if (-not $p.HasExited) { $p.Kill() }
 
-      - name: Seek stability test
-        shell: pwsh
-        run: |
-          $exe = "dist\VideoCompare.exe"
-          & $exe --seektest "_test\media\07_long_90s.mp4" "0.2,0.85,0.05,0.6,0.35,0.9,0.45"
-          Get-Content "dist\seektest.txt"
-          if (-not (Select-String -Path "dist\seektest.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "seektest failed" }
+            if (-not (Test-Path $c.Out)) {
+              Write-Host "!! $($c.Name): no output file"
+              $failed += $c.Name
+              continue
+            }
+            Get-Content $c.Out
+            if (-not (Select-String -Path $c.Out -Pattern 'RESULT_OK' -Quiet)) {
+              Write-Host "!! $($c.Name): result not OK"
+              $failed += $c.Name
+            }
+          }
 
-      - name: Click stability test
-        shell: pwsh
-        run: |
-          $exe = "dist\VideoCompare.exe"
-          & $exe --clicktest "_test\media\07_long_90s.mp4" "0.9,0.1,0.9,0.1,0.5,0.95,0.05" 350
-          Get-Content "dist\clicktest.txt"
-          if (-not (Select-String -Path "dist\clicktest.txt" -Pattern 'RESULT_OK' -Quiet)) { throw "clicktest failed" }
+          if ($failed.Count -gt 0) { throw "failed checks: $($failed -join ', ')" }
+
+      - name: Upload check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-logs
+          path: dist/*.txt
+          if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v4
         with:
