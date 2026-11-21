@@ -47,7 +47,8 @@ if (Test-Path $outExe) {
     catch { throw "cannot overwrite $outExe - close the running app first" }
 }
 
-$args = @(
+# NOTE: do not name this $args - that is a PowerShell automatic variable
+$cscArgs = @(
     '-nologo'
     '-target:winexe'
     '-platform:x64'
@@ -69,15 +70,16 @@ $args = @(
 ) + $sources
 
 Write-Host "==> compiling $($sources.Count) sources with $csc"
-& $csc $args
+& $csc @cscArgs
 if ($LASTEXITCODE -ne 0) { throw "csc failed with exit code $LASTEXITCODE" }
 
 $item = Get-Item $outExe
 Write-Host ("==> built {0} ({1:N0} bytes, version {2})" -f $item.FullName, $item.Length, $ver)
 
 if ($Zip) {
-    $zip = Join-Path $distDir ("video-compare-{0}-win-x64.zip" -f $ver)
-    if (Test-Path $zip) { Remove-Item $zip -Force }
+    # NOTE: the local variable must not be called $zip - the [switch]$Zip parameter owns that name
+    $zipPath = Join-Path $distDir ("video-compare-{0}-win-x64.zip" -f $ver)
+    if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
     $stage = Join-Path $distDir 'stage'
     if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
     New-Item -ItemType Directory -Force -Path $stage | Out-Null
@@ -87,7 +89,7 @@ if ($Zip) {
         if (Test-Path $p) { Copy-Item $p $stage }
     }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip)
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $zipPath)
     Remove-Item $stage -Recurse -Force
-    Write-Host ("==> packaged {0} ({1:N0} bytes)" -f $zip, (Get-Item $zip).Length)
+    Write-Host ("==> packaged {0} ({1:N0} bytes)" -f $zipPath, (Get-Item $zipPath).Length)
 }

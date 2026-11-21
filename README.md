@@ -60,7 +60,8 @@ powershell -ExecutionPolicy Bypass -File build.ps1          # 产出 dist\VideoC
 powershell -ExecutionPolicy Bypass -File build.ps1 -Zip     # 额外打包 release zip
 ```
 
-也可以直接用 MSBuild 打开 `src/VideoCompare/VideoCompare.csproj`（VS 2019+ / .NET Framework 4.8 目标）。
+也可以直接用 MSBuild / Visual Studio 打开 `src/VideoCompare/VideoCompare.csproj`（目标 .NET Framework 4.8，
+用 VS 构建时需要装 4.8 的目标包；只用 `build.ps1` 则不需要，警告 `MSB3644` 可忽略）。
 产物为单文件 exe（约 200 KB），运行时资源（XAML 样式）以字符串形式内嵌，见 `src/VideoCompare/Styles.cs`。
 
 ## 自动化测试
