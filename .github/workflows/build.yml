@@ -88,13 +88,20 @@ jobs:
           name: video-compare-win-x64
           path: dist
 
-      - name: Create GitHub release
+      - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
         run: |
           # 这个作业没有 checkout，必须显式 --repo，否则 gh 报 fatal: not a git repository
-          gh release create "$GITHUB_REF_NAME" dist/video-compare-*-win-x64.zip \
-            --repo "$REPO" \
-            --title "视频对比工具 $GITHUB_REF_NAME" \
-            --generate-notes
+          # 幂等：标签重打 / 重跑该作业时不报错，直接覆盖资产
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "release $TAG already exists - uploading assets with --clobber"
+            gh release upload "$TAG" dist/video-compare-*-win-x64.zip --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" dist/video-compare-*-win-x64.zip \
+              --repo "$REPO" \
+              --title "视频对比工具 $TAG" \
+              --generate-notes
+          fi

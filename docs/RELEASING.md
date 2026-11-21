@@ -25,7 +25,8 @@
 
 5. 标签推送后 CI 会自动：编译 → 生成样片 → 跑四个测试 → 产出
    `video-compare-x.y.z-win-x64.zip` → 创建 GitHub Release（附 zip，自动生成 release notes）。
-   若 CI 失败，Release 不会创建，先修 CI。
+   若 CI 失败，Release 不会创建，先修 CI。发布作业是幂等的：标签重打或重跑该作业时，
+   已有 Release 只会被覆盖资产（`--clobber`），不会报「已存在」错误。
 6. 人工补一句「升级注意」到 Release 说明（例如需要新版 ffmpeg、设置文件位置变化）。
 
 ## 产物命名
