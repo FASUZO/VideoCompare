@@ -91,7 +91,10 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
+          # 这个作业没有 checkout，必须显式 --repo，否则 gh 报 fatal: not a git repository
           gh release create "$GITHUB_REF_NAME" dist/video-compare-*-win-x64.zip \
+            --repo "$REPO" \
             --title "视频对比工具 $GITHUB_REF_NAME" \
             --generate-notes
