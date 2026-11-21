@@ -1,0 +1,18 @@
+# 第三方组件说明
+
+本项目**不随包分发** ffmpeg。
+
+程序可以选择性地使用用户自己安装的 ffmpeg / ffprobe（用于：
+ProRes / VP9 / 10bit 等格式的转码兜底、网络大文件的片段播放、部分元数据探测）。
+ffmpeg 依据其构建方式适用 LGPL 或 GPL（常见的 full build 是 GPL）。
+
+- 若你只是本机使用，不涉及再分发义务。
+- 若你把本程序与某个 ffmpeg 二进制一起再分发，你需要自行遵守该 ffmpeg 构建的许可条款
+  （提供许可文本、并按其要求提供对应源码获取方式）。
+
+程序查找 ffmpeg 的顺序：`%LOCALAPPDATA%\VideoCompare\ffmpeg\bin` →
+`%LOCALAPPDATA%\VideoCompare\ffmpeg` → `PATH`。不安装 ffmpeg 时，
+Media Foundation 能解码的格式（H.264 / AVI / 系统已装解码器的 HEVC 等）仍然正常工作。
+
+其它依赖均为 Windows 系统自带组件（.NET Framework、WPF、Media Foundation、shell32），
+随操作系统分发，不在本仓库范围内。

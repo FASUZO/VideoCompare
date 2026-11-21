@@ -19,13 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----------------------------------------------------------------------------
-Third-party components (NOT bundled)
-
-This project does not ship FFmpeg. It can *use* an FFmpeg build that the user
-installs separately (optional, used for remuxing / clip transcoding and for
-probing metadata). FFmpeg is licensed under the LGPL/GPL depending on the
-build; the common full builds are GPL. If you redistribute this application
-together with an FFmpeg binary, you are responsible for complying with that
-license (shipping the license text and offering the corresponding source).

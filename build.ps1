@@ -84,7 +84,7 @@ if ($Zip) {
     if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
     New-Item -ItemType Directory -Force -Path $stage | Out-Null
     Copy-Item $outExe $stage
-    foreach ($doc in @('README.md', 'LICENSE', 'CHANGELOG.md')) {
+    foreach ($doc in @('README.md', 'LICENSE', 'NOTICE', 'CHANGELOG.md')) {
         $p = Join-Path $root $doc
         if (Test-Path $p) { Copy-Item $p $stage }
     }

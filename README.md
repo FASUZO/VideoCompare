@@ -125,5 +125,6 @@ exe 没有代码签名证书，SmartScreen 会拦。点「更多信息 → 仍�
 
 ## 许可
 
-代码以 [MIT](LICENSE) 发布。程序不使用也不分发 ffmpeg；若你随程序一起分发 ffmpeg（GPL 构建），
-需要自行遵守其许可证要求。
+本仓库代码以 [MIT](LICENSE) 许可发布。
+
+关于可选的 ffmpeg / ffprobe 等第三方组件（本项目不随包分发），见 [NOTICE](NOTICE)。
