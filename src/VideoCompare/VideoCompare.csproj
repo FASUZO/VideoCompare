@@ -31,7 +31,6 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
@@ -41,6 +40,7 @@
     <Compile Include="AppSettings.cs" />
     <Compile Include="CrashGuard.cs" />
     <Compile Include="FfmpegHelper.cs" />
+    <Compile Include="FilePicker.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="MediaProbe.cs" />
     <Compile Include="PaneView.cs" />

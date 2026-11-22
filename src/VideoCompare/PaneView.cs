@@ -1442,16 +1442,11 @@ namespace VideoCompare
         // ---------------------------------------------------------------- 文件操作
         async Task PickFile()
         {
-            var dlg = new Microsoft.Win32.OpenFileDialog
+            string start = (Info != null && !string.IsNullOrEmpty(Info.Dir)) ? Info.Dir : AppSettings.LastDir;
+            string picked = FilePickerWindow.PickFile(Window.GetWindow(Root), start, "选择视频");
+            if (!string.IsNullOrEmpty(picked))
             {
-                Title = "选择视频",
-                Filter = "视频文件|*.mp4;*.mkv;*.mov;*.avi;*.webm;*.ts;*.m2ts;*.mts;*.wmv;*.mpg;*.mpeg;*.flv;*.3gp;*.ogv|所有文件|*.*",
-                InitialDirectory = Directory.Exists(Info != null ? Info.Dir : null) ? Info.Dir : null,
-                CheckFileExists = true,
-            };
-            if (dlg.ShowDialog() == true)
-            {
-                await Load(dlg.FileName);
+                await Load(picked);
             }
         }
 
@@ -1522,23 +1517,26 @@ namespace VideoCompare
         async Task Move()
         {
             if (!HasMedia) return;
-            var dlg = new System.Windows.Forms.FolderBrowserDialog { Description = "选择要移动到的文件夹" };
-            if (Info != null && !string.IsNullOrEmpty(Info.Dir) && Directory.Exists(Info.Dir)) dlg.SelectedPath = Info.Dir;
-            if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            string dest = Path.Combine(dlg.SelectedPath, Path.GetFileName(CurrentPath));
-            if (string.Equals(Path.GetDirectoryName(CurrentPath), dlg.SelectedPath, StringComparison.OrdinalIgnoreCase))
+            string start = (Info != null && !string.IsNullOrEmpty(Info.Dir) && Directory.Exists(Info.Dir))
+                ? Info.Dir
+                : AppSettings.LastDir;
+            string folder = FilePickerWindow.PickFolder(Window.GetWindow(Root), start, "选择要移动到的文件夹");
+            if (string.IsNullOrEmpty(folder)) return;
+            folder = PathUtil.Normalize(folder);
+            string dest = Path.Combine(folder, Path.GetFileName(CurrentPath));
+            if (string.Equals(Path.GetDirectoryName(CurrentPath), folder, StringComparison.OrdinalIgnoreCase))
             {
                 host.SetTopStatus("文件已在该文件夹中");
                 return;
             }
-            if (File.Exists(dest))
+            if (File.Exists(PathUtil.Safe(dest)))
             {
                 string stem = Path.GetFileNameWithoutExtension(CurrentPath);
                 string ext = Path.GetExtension(CurrentPath);
                 for (int i = 1; i < 100; i++)
                 {
-                    string cand = Path.Combine(dlg.SelectedPath, stem + " (" + i + ")" + ext);
-                    if (!File.Exists(cand)) { dest = cand; break; }
+                    string cand = Path.Combine(folder, stem + " (" + i + ")" + ext);
+                    if (!File.Exists(PathUtil.Safe(cand))) { dest = cand; break; }
                 }
             }
             try
@@ -1546,11 +1544,11 @@ namespace VideoCompare
                 bool wasPlaying = IsPlaying();
                 double pos = GlobalPosition();
                 Player.Stop(); Player.Close(); Player.Source = null;
-                File.Move(CurrentPath, dest);
+                File.Move(PathUtil.Safe(CurrentPath), PathUtil.Safe(dest));
                 await Load(dest, false);
                 if (pos > 0) SeekTo(pos);
                 if (wasPlaying) Play();
-                host.SetTopStatus("已移动到 " + dlg.SelectedPath);
+                host.SetTopStatus("已移动到 " + folder);
             }
             catch (Exception ex)
             {

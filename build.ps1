@@ -62,7 +62,6 @@ $cscArgs = @(
     '-r:System.dll'
     '-r:System.Core.dll'
     '-r:System.Xaml.dll'
-    '-r:System.Windows.Forms.dll'
     '-r:Microsoft.VisualBasic.dll'
     '-r:WindowsBase.dll'
     '-r:PresentationCore.dll'

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace VideoCompare
 {
@@ -204,6 +205,27 @@ namespace VideoCompare
 
         async Task StartupAsync(string[] args)
         {
+            // --pickshow [path] [--folder]：打开自写文件选择器并留在屏幕上（截图/人工核对用）
+            if (args.Length > 0 && string.Equals(args[0], "--pickshow", StringComparison.OrdinalIgnoreCase))
+            {
+                bool folder = Array.Exists(args, x => string.Equals(x, "--folder", StringComparison.OrdinalIgnoreCase));
+                string start = args.Length > 1 && !args[1].StartsWith("--") ? args[1] : null;
+                var pw = new FilePickerWindow(
+                    folder ? FilePickerWindow.Mode.Folder : FilePickerWindow.Mode.File,
+                    start, folder ? "选择要移动到的文件夹" : "选择视频");
+                pw.Owner = this;
+                pw.Show();
+                FilePickerWindow.LastShown = pw;   // 防止非模态窗口被 GC 回收
+                return;
+            }
+            // --pickcheck <path1> [path2] …：不弹窗、只跑逻辑，验证自写文件选择器的路径解析
+            if (args.Length > 1 && string.Equals(args[0], "--pickcheck", StringComparison.OrdinalIgnoreCase))
+            {
+                string[] paths = new string[args.Length - 1];
+                Array.Copy(args, 1, paths, 0, paths.Length);
+                RunPickCheck(paths);
+                return;
+            }
             // --selftest <file1> [file2]：跑一遍并写结果，便于自动化验证
             if (args.Length > 0 && string.Equals(args[0], "--selftest", StringComparison.OrdinalIgnoreCase))
             {
@@ -260,6 +282,120 @@ namespace VideoCompare
             if (files.Length >= 2) await LoadBoth(files[0], files[1]);
             else if (files.Length == 1) await Left.Load(files[0]);
             if (seekGiven) Left.DebugSeekFraction(seekFrac);
+        }
+
+        /// <summary>
+        /// 无界面自检：验证「选择视频」自写选择器把各种路径写法都当成路径解析。
+        /// 重点是：直接输入一个文件路径 → 立即返回该路径（而不是交给系统播放器打开）。
+        /// </summary>
+        void RunPickCheck(string[] paths)
+        {
+            var sb = new System.Text.StringBuilder();
+            int pass = 0, fail = 0;
+            Action<string> ok = (msg) => { pass++; sb.AppendLine("PASS " + msg); };
+            Action<string> bad = (msg) => { fail++; sb.AppendLine("FAIL " + msg); };
+
+            try
+            {
+                sb.AppendLine("data_dir=" + AppSettings.DataDir);
+                sb.AppendLine("last_dir=" + (AppSettings.LastDir ?? "<null>"));
+                sb.AppendLine("picker=FilePickerWindow (no system dialog)");
+
+                for (int i = 0; i < paths.Length; i++)
+                {
+                    string raw = paths[i];
+                    string shown = raw.Length > 130 ? raw.Substring(0, 62) + " … " + raw.Substring(raw.Length - 56) : raw;
+                    sb.AppendLine("---- [" + (i + 1) + "] " + shown);
+
+                    string norm = PathUtil.Normalize(raw);
+                    bool isFile = PathUtil.IsFile(norm);
+                    bool isDir = !isFile && PathUtil.IsDir(norm);
+                    sb.AppendLine("  normalized=" + norm);
+                    sb.AppendLine("  is_file=" + isFile + " is_dir=" + isDir +
+                                  " server_root=" + PathUtil.IsServerRoot(norm) +
+                                  " ext_ok=" + PathUtil.IsVideoName(norm));
+
+                    if (!isFile && !isDir)
+                    {
+                        bad("路径不存在或无法访问：" + norm);
+                        continue;
+                    }
+
+                    string dir = isFile ? PathUtil.ParentOf(norm) : norm;
+                    string name = Path.GetFileName(norm);
+
+                    // 1) 列目录：能打开，且文件模式下文件出现在列表里
+                    var w1 = new FilePickerWindow(FilePickerWindow.Mode.File, null, "pickcheck");
+                    bool nav1 = w1.NavigateTo(dir);
+                    sb.AppendLine("  browse dir=" + dir);
+                    sb.AppendLine("  browse items=" + w1.ItemCount + " status=" + w1.StatusText);
+                    if (nav1) ok("能列出目录");
+                    else bad("列不出目录：" + dir);
+                    if (isFile)
+                    {
+                        if (w1.HasName(name)) ok("父目录里能看到该文件");
+                        else bad("父目录里看不到该文件：" + name);
+                        if (PathUtil.IsVideoName(norm)) ok("扩展名被识别为视频");
+                        else sb.AppendLine("NOTE 扩展名不在视频列表里（勾选「显示所有文件类型」仍可选）：" + name);
+                    }
+
+                    // 2) 直接输入文件路径 → 立即接受（关键修复点）
+                    var w2 = new FilePickerWindow(FilePickerWindow.Mode.File, null, "pickcheck");
+                    bool nav2 = w2.NavigateTo(raw);
+                    sb.AppendLine("  direct accepted=" + w2.Accepted + " result=" + (w2.Result ?? "<null>"));
+                    if (isFile)
+                    {
+                        if (nav2 && w2.Accepted && string.Equals(w2.Result, norm, StringComparison.OrdinalIgnoreCase))
+                            ok("直接输入文件路径 → 直接返回该文件");
+                        else
+                            bad("直接输入文件路径没有直接返回");
+                    }
+                    else
+                    {
+                        if (nav2 && !w2.Accepted && string.Equals(w2.CurrentDir, norm, StringComparison.OrdinalIgnoreCase))
+                            ok("直接输入目录 → 进入目录且不确认");
+                        else
+                            bad("直接输入目录行为异常");
+                    }
+
+                    // 3) 文件夹模式（「移动」按钮用）：输入文件不能被当成文件夹确认
+                    var w3 = new FilePickerWindow(FilePickerWindow.Mode.Folder, null, "pickcheck");
+                    bool nav3 = w3.NavigateTo(raw);
+                    if (isFile)
+                    {
+                        if (!w3.Accepted) ok("文件夹模式拒绝把文件当文件夹");
+                        else bad("文件夹模式错误地把文件当文件夹确认了");
+                    }
+                    else
+                    {
+                        if (nav3 && !w3.Accepted) ok("文件夹模式进入目录（需再点确认）");
+                        else bad("文件夹模式进入目录行为异常");
+                    }
+                }
+
+                // 4) 不存在的路径不应抛异常
+                var w4 = new FilePickerWindow(FilePickerWindow.Mode.File, null, "pickcheck");
+                bool nav4 = w4.NavigateTo("C:\\__video_compare_no_such_dir__\\x.mp4");
+                if (!nav4 && !w4.Accepted) ok("不存在的路径被拒绝且没有抛异常");
+                else bad("不存在的路径处理异常");
+                sb.AppendLine("  missing status=" + w4.StatusText);
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine("RESULT_EXCEPTION " + ex);
+            }
+            finally
+            {
+                sb.AppendLine("SUMMARY pass=" + pass + " fail=" + fail);
+                sb.AppendLine(fail == 0 ? "RESULT_OK" : "RESULT_FAIL " + fail);
+                try
+                {
+                    File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pickcheck.txt"),
+                        sb.ToString(), System.Text.Encoding.UTF8);
+                }
+                catch { }
+                Application.Current.Shutdown();
+            }
         }
 
         async Task RunSelfTest(string a, string b)
@@ -665,11 +801,15 @@ namespace VideoCompare
             else if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 var target = Left.HasMedia ? Right : Left;
-                var dlg = new Microsoft.Win32.OpenFileDialog
+                string start = (target.Info != null && !string.IsNullOrEmpty(target.Info.Dir))
+                    ? target.Info.Dir
+                    : AppSettings.LastDir;
+                string picked = FilePickerWindow.PickFile(this, start, "选择视频");
+                if (!string.IsNullOrEmpty(picked))
                 {
-                    Filter = "视频文件|*.mp4;*.mkv;*.mov;*.avi;*.webm;*.ts;*.m2ts;*.wmv;*.mpg;*.mpeg;*.flv|所有文件|*.*",
-                };
-                if (dlg.ShowDialog() == true) Async.Fire(() => target.Load(dlg.FileName));
+                    var pane = target;
+                    Async.Fire(() => pane.Load(picked));
+                }
                 e.Handled = true;
             }
         }
@@ -884,7 +1024,7 @@ namespace VideoCompare
 
         static bool IsDiagnostic(string[] args)
         {
-            string[] switches = { "--selftest", "--uicheck", "--seektest", "--clicktest", "--barrect" };
+            string[] switches = { "--selftest", "--uicheck", "--seektest", "--clicktest", "--barrect", "--pickcheck", "--pickshow" };
             for (int i = 0; i < args.Length; i++)
             {
                 for (int j = 0; j < switches.Length; j++)
